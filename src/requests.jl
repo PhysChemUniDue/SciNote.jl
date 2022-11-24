@@ -1,5 +1,6 @@
 using HTTP,JSON,Base64,Sockets,DataFrames
 import StringDistances: Levenshtein
+import Plots: savefig
 
 const SCINOTE_URL = "http://titus.phchem.uni-due.de:3000"
 const client_id = "7vJ_9ypiSlFDLyWYoF_TGpceceDPxXFDnF01Wp3HPMo"
