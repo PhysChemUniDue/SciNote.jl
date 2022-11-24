@@ -412,5 +412,60 @@ function post_step(experiment::AbstractString,task::AbstractString,step::Abstrac
     end
 end
 
+"""
+    post_plot(plot,experiment::AbstractString,task::AbstractString,step::AbstractString; name = experiment::AbstractString )
+Post the plot on SciNote as an Attachement in the specified experiment. If you dont specify name the name will be the same as experiment \n
+If succesfull the function returns the link to the posted attachment \n
+
+    If this doenst work, make sure you specified the right experiment, task and step. Use list_experiments(),list_tasks() and list_tasks() !!!
+
+e.g. post_plot(plot,"Alkanethiols","HDT_01","001", name = "Awesome Plot" )
+
+"""
+function post_plot(plot,experiment::AbstractString,task::AbstractString,step::AbstractString; name = step::AbstractString)
+
+    if api_running() == true
+        token_tim = token()["access_token"] 
+        experiment_id  = try get_experiments(token_tim,team_id,project_id_femto_lab)[experiment] catch end
+        if experiment_id === nothing
+            error("$(experiment) was not found. Try list_experiments() to see all available experiments on Titus.")
+        end
+        task_id = try get_tasks(token_tim,team_id,project_id_femto_lab,experiment_id)[task] catch end
+        if task_id === nothing
+            error("$(task) was not found. Try list_tasks(experiment) to see all available tasks in given experiment on Titus.")
+        end
+        protocol_id = get_protocols(token_tim,team_id,project_id_femto_lab,experiment_id,task_id)[1]
+        step_id = try get_steps(token_tim,team_id,project_id_femto_lab,experiment_id,task_id,protocol_id)[step] catch end
+        if step_id === nothing
+            error("$(step) was not found. Try list_steps(experiment,task) to see all available steps in given experiment and task on Titus.")
+        end
+          
+        savefig(plot,"./tmp.png")
+        file_data = open("./tmp.png") do io
+            Base64.base64encode(io)
+        end
+        rm("./tmp.png",force=true)
+        
+        attachment = 
+            Dict(
+                "data"=> Dict(
+                    "attributes"=> Dict(
+                        "file_name" => "$name.png", 
+                        "file_type" => "image/png",
+                         "file_data" => file_data
+                        ),
+                    "type" => "attachments"
+                )
+            )
+        resp = HTTP.request("POST", SCINOTE_URL*"/api/v1/teams/$team_id/projects/$project_id_femto_lab/experiments/$experiment_id/tasks/$task_id/protocols/$protocol_id/steps/$step_id/attachments",
+            header(token_tim),
+            JSON.json(attachment)
+        )
+        sleep(1)
+        body = String(resp.body)
+        data=JSON.parse(body)["data"]
+        url = data["attributes"]["file_url"]
+   end
+end
 
 

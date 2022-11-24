@@ -24,6 +24,7 @@ export
     list_tasks,
     list_steps,
     get_sample,
-    post_step
+    post_step,
+    post_plot
 
 end 
